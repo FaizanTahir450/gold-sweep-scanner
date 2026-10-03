@@ -1,0 +1,66 @@
+name: Gold Sweep Scan
+
+on:
+  schedule:
+    - cron: "*/15 * * * 0-5"   # every 15 min, Sunday–Friday (gold does not trade on Saturday)
+  workflow_dispatch:            # manual run
+    inputs:
+      dry_run:
+        description: "Dry run - print the message in the job log, send nothing, write nothing"
+        type: boolean
+        default: false
+      feed:
+        description: "Price feed (oanda = real spot gold, needs OANDA_TOKEN; bitget = XAUUSDT perpetual, keyless)"
+        type: choice
+        default: oanda
+        options: [oanda, bitget]
+
+# Allow the job to commit the state file / signal log back to the repo.
+permissions:
+  contents: write
+
+# Serialize runs so a late tick never races the previous commit-back.
+concurrency:
+  group: gold-sweep-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main            # start from the branch TIP, even when this run queued behind one that committed state
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run gold scanner
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}
+          FEED: ${{ inputs.feed || 'oanda' }}
+          DRY_RUN: ${{ inputs.dry_run == true && '1' || '0' }}
+        run: python gold_scanner.py
+
+      - name: Commit state + signal log
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for f in gold_state.json gold_signals.jsonl gold_alerts_archive.txt; do
+            [ -f "$f" ] && git add "$f"
+          done
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+          else
+            git commit -m "chore: gold scan - update state + log [skip ci]"
+            git push || (git pull --rebase && git push)
+          fi
