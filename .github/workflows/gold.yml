@@ -10,10 +10,10 @@ on:
         type: boolean
         default: false
       feed:
-        description: "Price feed (oanda = real spot gold, needs OANDA_TOKEN; bitget = XAUUSDT perpetual, keyless)"
+        description: "Price feed (auto = TradingView Pepperstone chart, then Dukascopy, then Bitget)"
         type: choice
-        default: oanda
-        options: [oanda, bitget]
+        default: auto
+        options: [auto, tradingview, dukascopy, bitget, oanda]
 
 # Allow the job to commit the state file / signal log back to the repo.
 permissions:
@@ -45,8 +45,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}
-          FEED: ${{ inputs.feed || 'oanda' }}
+          OANDA_TOKEN: ${{ secrets.OANDA_TOKEN }}        # optional, only for FEED=oanda
+          FEED: ${{ inputs.feed || 'auto' }}
           DRY_RUN: ${{ inputs.dry_run == true && '1' || '0' }}
         run: python gold_scanner.py
 
