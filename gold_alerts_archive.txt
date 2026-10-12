@@ -27,3 +27,8 @@
 
 🔴 Bearish sweep:
   • 1h  @ 4,181.90  ⭐61  · SL 4,185.93 · TP 4,173.84  · candle 09 Oct 04:00 UTC
+============================================================
+🥇 Gold sweep — XAUUSD (TradingView PEPPERSTONE:XAUUSD) — 12 Oct 2026 06:01 UTC
+
+🟢 Bullish sweep:
+  • 15m @ 4,184.77  ⭐43  · SL 4,183.68 · TP 4,186.95  · candle 12 Oct 05:15 UTC
